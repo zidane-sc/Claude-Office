@@ -16,6 +16,8 @@ interface CharacterProps {
   zIndex?: number
   /** Show typing indicator (about to post a Slack message) */
   isTyping?: boolean
+  onClick?: () => void
+  isSelected?: boolean
 }
 
 // Movement direction → sprite variant
@@ -37,7 +39,7 @@ function getDirectionFromDelta(dx: number, dy: number): SpriteDirection {
   return 'front-left'                             // down-left
 }
 
-function getCharBase(role: string): string {
+export function getCharBase(role: string): string {
   return ROLE_TO_CHAR[role] ?? 'employee-3'
 }
 
@@ -66,7 +68,7 @@ const OPPOSITE: Record<SpriteDirection, SpriteDirection> = {
   'rear-right': 'front-left',
 }
 
-const Character: React.FC<CharacterProps> = ({ agent, idleDurationMs = 0, zIndex, isTyping }) => {
+const Character: React.FC<CharacterProps> = ({ agent, idleDurationMs = 0, zIndex, isTyping, onClick, isSelected }) => {
   const prevPosRef = useRef({ x: agent.position.x, y: agent.position.y })
   const directionRef = useRef<SpriteDirection>(agent.spriteFacing ?? 'front-right')
   const [turnedAround, setTurnedAround] = useState(false)
@@ -133,7 +135,11 @@ const Character: React.FC<CharacterProps> = ({ agent, idleDurationMs = 0, zIndex
 
   return (
     <div
-      className={`character-wrapper state-${animState}`}
+      className={`character-wrapper state-${animState}${isSelected ? ' selected' : ''}`}
+      onClick={(e) => {
+        e.stopPropagation()
+        onClick?.()
+      }}
       style={{
         left: `${agent.position.x}%`,
         top: `${agent.position.y}%`,
@@ -141,6 +147,27 @@ const Character: React.FC<CharacterProps> = ({ agent, idleDurationMs = 0, zIndex
         zIndex: zIndex ?? Math.round(agent.position.y),
       }}
     >
+      {/* Floating Identity & Task Label */}
+      <div className="char-badge-group">
+        <div className="char-nametag" style={{ borderColor: agent.color }}>
+          <span className="char-nametag-name">{agent.name}</span>
+          <span className="char-nametag-role" style={{ backgroundColor: agent.color }}>
+            {agent.role === 'boss' ? 'BOSS' : agent.role === 'assistant' ? 'COPILOT' : agent.role.replace('-developer', '').replace('-engineer', '').replace('-auditor', '').slice(0, 10).toUpperCase()}
+          </span>
+        </div>
+        {(agent.task || agent.state === 'coffee-break') && (
+          <div className="char-task-pill">
+            <span
+              className="char-task-dot"
+              style={{ backgroundColor: agent.state === 'coffee-break' ? '#f59e0b' : '#10b981' }}
+            />
+            <span className="char-task-text">
+              {agent.state === 'coffee-break' ? 'Ngopi ☕' : agent.task ? agent.task.slice(0, 22) : 'Working'}
+            </span>
+          </div>
+        )}
+      </div>
+
       {effectSrc && <EffectBubble src={effectSrc} alt={agent.state} />}
 
       {shouldShowBubble(agent.state) && agent.statusText && (
@@ -156,7 +183,9 @@ const Character: React.FC<CharacterProps> = ({ agent, idleDurationMs = 0, zIndex
           style={{
             height: agent.id.startsWith('boss-') ? 85 : 78,
             width: 'auto',
-            filter: `drop-shadow(0 0 1px ${agent.color}) drop-shadow(0 0 0.5px #000)`,
+            filter: isSelected
+              ? `drop-shadow(0 0 6px ${agent.color}) drop-shadow(0 0 1px #fff)`
+              : `drop-shadow(0 0 1px ${agent.color}) drop-shadow(0 0 0.5px #000)`,
             animationDelay: `${(agent.id.charCodeAt(0) * 0.37) % 3}s`,
           }}
           draggable={false}

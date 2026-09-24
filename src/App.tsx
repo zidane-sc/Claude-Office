@@ -28,10 +28,11 @@ import { BOSS_ROLE, BOSS_NAME } from './config'
 import { pickEvent } from './events'
 import { getInteraction } from './interactions'
 import {
-  useTheme, getRoomImage, getAngelaCat, getTheme,
+  useTheme, getRoomImage, getAngelaCat, getTheme, getSpritePath,
   OFFICE_SIM_TOOL_MESSAGES, OFFICE_SIM_BOSS_PROMPTS,
   assignCharacterToRole, releaseRole, nextUnusedOfficeCharacter, displayNameFromSlug,
 } from './theme'
+import { getCharBase } from './components/Character'
 
 // ---------------------------------------------------------------------------
 // Placement helper — loaded via ?helper query param
@@ -284,6 +285,7 @@ const App: React.FC = () => {
   // All hooks must be at the top — before any conditional returns.
   const theme = useTheme() // Why: re-render rooms + agents when /the-office toggles
   const [agents, setAgents] = useState<Agent[]>(() => [createBoss(), createClaude()])
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
   const agentMetaRef = useRef<Map<string, AgentMeta>>(new Map([
     [BOSS_ID, { spawnedAt: Date.now(), arrivedAtDeskAt: Date.now(), idleSince: null, onBreak: false, breakStartedAt: null }],
     [CLAUDE_ID, { spawnedAt: Date.now(), arrivedAtDeskAt: Date.now(), idleSince: null, onBreak: false, breakStartedAt: null }],
@@ -1782,7 +1784,29 @@ const App: React.FC = () => {
       </div>
 
       <div className="app-body">
-      <div className="office-view">
+      <div className="office-view" onClick={() => setSelectedAgent(null)}>
+        {/* Live Team Roster Strip */}
+        <div className="office-team-strip" onClick={(e) => e.stopPropagation()}>
+          <span className="team-strip-title">STAFF ({agents.length}):</span>
+          <div className="team-strip-items">
+            {agents.map(a => (
+              <button
+                key={a.id}
+                className={`team-strip-pill ${selectedAgent?.id === a.id ? 'active' : ''}`}
+                onClick={() => setSelectedAgent(a)}
+                style={{ borderLeftColor: a.color }}
+                title={`${a.name} (${a.role})`}
+              >
+                <span className="team-strip-dot" style={{ backgroundColor: a.state === 'coffee-break' ? '#f59e0b' : '#10b981' }} />
+                <span className="team-strip-name">{a.name}</span>
+                <span className="team-strip-task">
+                  {a.state === 'coffee-break' ? '☕ Ngopi' : a.task ? a.task.slice(0, 18) : a.statusText || 'Active'}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div
           className={`room-container${flickering ? ' flickering' : ''}`}
           style={{
@@ -1845,6 +1869,8 @@ const App: React.FC = () => {
                 idleDurationMs={idleDurationMs}
                 zIndex={zOverride}
                 isTyping={typingAgents.has(agent.id)}
+                onClick={() => setSelectedAgent(agent)}
+                isSelected={selectedAgent?.id === agent.id}
               />
             )
           })}
@@ -1905,6 +1931,75 @@ const App: React.FC = () => {
           {/* Day/night overlay */}
           <div className={`day-overlay ${effectivePhase}`} />
         </div>
+
+        {/* Selected Agent Inspector Card Modal */}
+        {selectedAgent && (
+          <div className="agent-modal-backdrop" onClick={() => setSelectedAgent(null)}>
+            <div className="agent-card-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="agent-card-header" style={{ borderColor: selectedAgent.color }}>
+                <div className="agent-card-avatar-wrap">
+                  <img
+                    src={getSpritePath(selectedAgent.id, selectedAgent.role, getCharBase(selectedAgent.role), 'front-right')}
+                    alt={selectedAgent.name}
+                    className="agent-card-avatar"
+                  />
+                </div>
+                <div className="agent-card-title-group">
+                  <div className="agent-card-badges">
+                    <span className="agent-card-role-badge" style={{ backgroundColor: selectedAgent.color }}>
+                      {selectedAgent.role.toUpperCase()}
+                    </span>
+                    <span className={`agent-card-status-pill ${selectedAgent.state}`}>
+                      {selectedAgent.state === 'coffee-break' ? '☕ COFFEE BREAK' : selectedAgent.state.toUpperCase()}
+                    </span>
+                  </div>
+                  <h3 className="agent-card-name">{selectedAgent.name}</h3>
+                </div>
+                <button className="agent-card-close" onClick={() => setSelectedAgent(null)}>✕</button>
+              </div>
+
+              <div className="agent-card-body">
+                <div className="agent-card-field">
+                  <span className="agent-field-label">CURRENT TASK</span>
+                  <p className="agent-field-value">{selectedAgent.task || 'Autonomous office monitoring & system tasks'}</p>
+                </div>
+                <div className="agent-card-field">
+                  <span className="agent-field-label">WORKSTATION</span>
+                  <p className="agent-field-value">{selectedAgent.assignedSpotId || 'Main Office Desk Pod'}</p>
+                </div>
+              </div>
+
+              <div className="agent-card-actions">
+                <button
+                  className="agent-action-btn primary"
+                  onClick={() => {
+                    const input = document.querySelector('.slack-input') as HTMLInputElement | null
+                    if (input) {
+                      input.value = `@${selectedAgent.name} `
+                      input.focus()
+                    }
+                    setSelectedAgent(null)
+                  }}
+                >
+                  💬 Chat di Slack
+                </button>
+                <button
+                  className="agent-action-btn secondary"
+                  onClick={() => {
+                    fetch('/chat', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ sender: 'Zidane', text: `/coffee` })
+                    }).catch(() => {})
+                    setSelectedAgent(null)
+                  }}
+                >
+                  ☕ Suruh Ngopi
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <SlackChat

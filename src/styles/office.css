@@ -324,7 +324,8 @@
   position: absolute;
   z-index: 10;
   transition: left 1.2s cubic-bezier(0.4, 0, 0.2, 1), top 1.2s cubic-bezier(0.4, 0, 0.2, 1);
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .char-body-group {
@@ -1297,5 +1298,331 @@
     border-top: none;
     border-left: 1px solid #35363a;
   }
+}
+
+/* ===== AGENT FLOATING NAMEPLATES & TASK BADGES ===== */
+.char-badge-group {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 100;
+}
+
+.char-nametag {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(13, 13, 18, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 1px 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.char-nametag-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.char-nametag-role {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 5.5px;
+  font-weight: 800;
+  color: #000;
+  padding: 0.5px 3px;
+  border-radius: 2px;
+  letter-spacing: 0.5px;
+}
+
+.char-task-pill {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(20, 20, 28, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 0.5px 5px;
+  max-width: 110px;
+  overflow: hidden;
+}
+
+.char-task-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: taskPulse 1.5s infinite;
+}
+
+@keyframes taskPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.char-task-text {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 6px;
+  color: #d1d2d3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== TEAM ROSTER TOP STRIP ===== */
+.office-team-strip {
+  width: 100%;
+  background: rgba(13, 13, 18, 0.95);
+  border-bottom: 1px solid #35363a;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 50;
+  overflow-x: auto;
+}
+
+.team-strip-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7px;
+  font-weight: 800;
+  color: #888;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+
+.team-strip-items {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.team-strip-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #1c1c24;
+  border: 1px solid #35363a;
+  border-left-width: 3px;
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.team-strip-pill:hover, .team-strip-pill.active {
+  background: #282834;
+  border-color: #555;
+  transform: translateY(-1px);
+}
+
+.team-strip-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.team-strip-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.team-strip-task {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 7.5px;
+  color: #888;
+}
+
+/* ===== AGENT CARD MODAL ===== */
+.agent-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.agent-card-modal {
+  width: 280px;
+  background: #14141c;
+  border: 1px solid #35363a;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+  animation: modalPop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.agent-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #1c1c26;
+  border-bottom: 2px solid;
+  position: relative;
+}
+
+.agent-card-avatar-wrap {
+  width: 44px;
+  height: 44px;
+  background: #282836;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.agent-card-avatar {
+  height: 48px;
+  width: auto;
+  image-rendering: pixelated;
+}
+
+.agent-card-title-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.agent-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 3px;
+}
+
+.agent-card-role-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 6px;
+  font-weight: 800;
+  color: #000;
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+.agent-card-status-pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 6px;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+.agent-card-name {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agent-card-close {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.agent-card-close:hover {
+  color: #fff;
+}
+
+.agent-card-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agent-card-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.agent-field-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 6.5px;
+  font-weight: 700;
+  color: #666;
+  letter-spacing: 0.5px;
+}
+
+.agent-field-value {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 10px;
+  color: #ccc;
+  line-height: 1.4;
+}
+
+.agent-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 12px 12px;
+  border-top: 1px solid #282834;
+}
+
+.agent-action-btn {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+}
+
+.agent-action-btn.primary {
+  background: #cc785c;
+  color: #fff;
+}
+
+.agent-action-btn.primary:hover {
+  background: #db8569;
+}
+
+.agent-action-btn.secondary {
+  background: #252532;
+  color: #ccc;
+  border: 1px solid #3a3a4c;
+}
+
+.agent-action-btn.secondary:hover {
+  background: #323242;
+  color: #fff;
 }
 
