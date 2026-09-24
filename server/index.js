@@ -11,7 +11,7 @@ import express from 'express'
 import { createServer } from 'http'
 import { WebSocketServer, WebSocket } from 'ws'
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'fs'
-import { homedir } from 'os'
+import { homedir, loadavg, freemem, totalmem, uptime } from 'os'
 import { join } from 'path'
 import { randomBytes } from 'crypto'
 import { execFile } from 'child_process'
@@ -224,28 +224,148 @@ app.post('/event', (req, res) => {
 })
 
 // ---------------------------------------------------------------------------
+// 9Router AI Integration & Helpers
+// ---------------------------------------------------------------------------
+
+function get9RouterKey() {
+  try {
+    const config = readFileSync(join(homedir(), '.hermes', 'config.yaml'), 'utf8')
+    const match = config.match(/api_key:\s*([^\s]+)/)
+    return match ? match[1] : ''
+  } catch {
+    return ''
+  }
+}
+
+let isAiReplying = false
+
+async function generateAiReply(userText, sender) {
+  if (isAiReplying) return
+  const apiKey = get9RouterKey()
+  if (!apiKey) return
+
+  isAiReplying = true
+  broadcast({ type: 'chat_typing', sender: 'Claude' })
+
+  try {
+    const recent = getMessages({ limit: 6 })
+    const history = recent
+      .filter(m => !m.is_system)
+      .map(m => ({
+        role: m.sender.toLowerCase() === 'claude' ? 'assistant' : 'user',
+        content: `${m.sender}: ${m.text}`
+      }))
+
+    const systemPrompt = `You are Claude, Zidane's casual senior hacker copilot and coworker sitting next to him in the Hermes Agent Virtual Office on an HP 1000 Debian server.
+Style: Casual Indonesian & English (vibecoding style, lu-gua / bro). Be sharp, witty, concise (max 2 sentences), and practical.
+You are in an office alongside other dev agents (Reviewer, Frontend, DevOps, Security). If Zidane asks you to do something, asks for office status, or jokes around, respond in character.`
+
+    const res = await fetch('http://127.0.0.1:20128/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'ag/gemini-3.8-flash-high',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...history
+        ],
+        stream: true
+      })
+    })
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let fullReply = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      const chunk = decoder.decode(value)
+      const lines = chunk.split('\n')
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (trimmed.startsWith('data: ') && trimmed !== 'data: [DONE]') {
+          try {
+            const json = JSON.parse(trimmed.slice(6))
+            const delta = json.choices[0]?.delta?.content || ''
+            fullReply += delta
+          } catch {}
+        }
+      }
+    }
+
+    const cleanReply = fullReply.trim()
+    if (cleanReply) {
+      const claudeMsg = addMessage({
+        sender: 'Claude',
+        role: 'assistant',
+        text: cleanReply
+      })
+      broadcast({ type: 'chat_message', ...claudeMsg })
+    }
+  } catch (err) {
+    console.error('[ai-reply] Error:', err.message)
+  } finally {
+    isAiReplying = false
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Slash commands
 // ---------------------------------------------------------------------------
 
-function handleSlashCommand(cmd) {
+async function handleSlashCommand(cmd, fullText = '') {
   switch (cmd) {
     case '/status': {
-      const agentCount = activeAgents.size
-      const working = Array.from(activeAgents.values()).filter(a => a.state === 'working').length
+      const totalMem = Math.round(totalmem() / 1024 / 1024)
+      const freeMem = Math.round(freemem() / 1024 / 1024)
+      const usedMem = totalMem - freeMem
+      const load = loadavg().map(n => n.toFixed(2)).join(', ')
+      const uptimeHours = (uptime() / 3600).toFixed(1)
       const clients = wss?.clients?.size ?? 0
-      return `📊 ${agentCount} agents active, ${working} working, ${clients} clients connected`
+      const working = Array.from(activeAgents.values()).filter(a => a.state === 'working').length
+      return `🖥️ HP 1000 Server: RAM ${usedMem}MB/${totalMem}MB | Load: [${load}] | Uptime: ${uptimeHours}h | Agents: ${activeAgents.size} (${working} active) | WS Clients: ${clients}`
     }
     case '/agents': {
       const agents = Array.from(activeAgents.values())
       if (agents.length === 0) return '🏢 Office is quiet — no agents active'
-      return agents.map(a => `${a.name} (${a.role}) — ${a.state}`).join(', ')
+      return agents.map(a => `👤 ${a.name} [${a.role}] (${a.state}: ${a.task || 'working'})`).join('\n')
+    }
+    case '/coffee': {
+      for (const [id, agent] of activeAgents.entries()) {
+        agent.state = 'coffee-break'
+        broadcast({ type: 'agent_working', agentId: id, status: 'grabs a coffee ☕' })
+      }
+      return '☕ Coffee break time! Everyone heading to the coffee machine.'
+    }
+    case '/spawn': {
+      const parts = fullText.split(' ')
+      const role = parts[1] || 'devops-engineer'
+      const name = parts.slice(2).join(' ') || 'DevOps Specialist'
+      const id = `agent-${role}-${Date.now()}`
+      const newAgent = {
+        id,
+        name,
+        role,
+        task: 'Working on infrastructure',
+        state: 'new-hire',
+        spawnedAt: Date.now()
+      }
+      activeAgents.set(id, newAgent)
+      broadcast({ type: 'agent_spawned', agent: newAgent })
+      return `🚀 Spawned ${name} (${role}) to the office!`
     }
     case '/clear': {
       db.prepare('DELETE FROM messages').run()
       return '🧹 Chat cleared'
     }
     case '/help':
-      return '📋 Commands: /status — office stats, /agents — list agents, /clear — wipe chat history, /help — this message'
+      return '📋 Commands: /status — server specs, /agents — active staff, /coffee — team coffee break, /spawn <role> <name> — hire agent, /clear — wipe chat'
     default:
       return null
   }
@@ -259,7 +379,7 @@ function handleSlashCommand(cmd) {
  * POST /chat — receives a message typed in the office Slack panel
  * No auth required (comes from the UI, not hooks)
  */
-app.post('/chat', (req, res) => {
+app.post('/chat', async (req, res) => {
   const { sender, text } = req.body ?? {}
   if (!sender || !text) {
     return res.status(400).json({ error: 'Missing sender or text' })
@@ -269,7 +389,7 @@ app.post('/chat', (req, res) => {
   if (typeof text === 'string' && text.startsWith('/')) {
     const parts = text.split(' ')
     const cmd = parts[0]
-    const cmdResult = handleSlashCommand(cmd)
+    const cmdResult = await handleSlashCommand(cmd, text)
     if (cmdResult) {
       const userMsg = addMessage({ sender: clampString(sender), text: clampString(text, 2000) })
       broadcast({ type: 'chat_message', ...userMsg })
@@ -287,12 +407,17 @@ app.post('/chat', (req, res) => {
   // Broadcast to all WS clients
   broadcast({ type: 'chat_message', ...msg })
 
+  // Trigger AI reply if message is from human (not Claude)
+  if (sender.toLowerCase() !== 'claude' && sender.toLowerCase() !== 'system') {
+    generateAiReply(text, sender)
+  }
+
   // Smart notification — ping when "claude" or "@claude" is mentioned
   if (/claude/i.test(text)) {
     sendNotification('Office Chat', clampString(sender) + ': ' + text.slice(0, 50))
   }
 
-  // Write to webhook file so Claude can detect new messages
+  // Write to webhook file so external tools can detect new messages
   try {
     const webhookPath = join(homedir(), '.agent-office', 'last-chat')
     writeFileSync(webhookPath, JSON.stringify(msg), 'utf8')
@@ -597,10 +722,75 @@ if (existsSync(DIST_DIR)) {
 }
 
 // ---------------------------------------------------------------------------
+// Resident Staff & Ambient Office Simulation
+// ---------------------------------------------------------------------------
+
+function seedResidentAgents() {
+  const residentStaff = [
+    {
+      id: 'staff-reviewer',
+      name: 'Dealls Reviewer',
+      role: 'code-reviewer',
+      task: 'Reviewing Kantorku ATS PR #142',
+      state: 'working',
+      spawnedAt: Date.now()
+    },
+    {
+      id: 'staff-frontend',
+      name: 'Frontend Hacker',
+      role: 'frontend-developer',
+      task: 'Vibecoding responsive UI components',
+      state: 'working',
+      spawnedAt: Date.now()
+    },
+    {
+      id: 'staff-security',
+      name: 'Security Hunter',
+      role: 'security-auditor',
+      task: 'Penetration testing & OWASP audit',
+      state: 'working',
+      spawnedAt: Date.now()
+    }
+  ]
+
+  for (const staff of residentStaff) {
+    activeAgents.set(staff.id, staff)
+  }
+  console.log(`[office] Seeded ${residentStaff.length} resident agents.`)
+}
+
+const AMBIENT_CHATS = [
+  { sender: 'Dealls Reviewer', role: 'code-reviewer', text: 'Semua unit test di ms-job-portal pass. Clean merge! 🚀' },
+  { sender: 'Frontend Hacker', role: 'frontend-developer', text: 'Tailwind JIT compile 28ms. UI-nya udah mobile-friendly.' },
+  { sender: 'Security Hunter', role: 'security-auditor', text: 'JWT expiry & CORS headers verified. Zero leaks.' },
+  { sender: 'Claude', role: 'assistant', text: 'Server HP 1000 adem banget, RAM kepake cuma 85MB.' },
+  { sender: 'Dealls Reviewer', role: 'code-reviewer', text: 'Ngopi bentar ah, lanjut review backend ms-profile.' }
+]
+
+function startAmbientLife() {
+  setInterval(() => {
+    if (!wss || wss.clients.size === 0) return
+
+    const random = Math.random()
+    if (random < 0.6) {
+      const item = AMBIENT_CHATS[Math.floor(Math.random() * AMBIENT_CHATS.length)]
+      const msg = addMessage({
+        sender: item.sender,
+        role: item.role,
+        text: item.text
+      })
+      broadcast({ type: 'chat_message', ...msg })
+    }
+  }, 45000)
+}
+
+// ---------------------------------------------------------------------------
 // Boot
 // ---------------------------------------------------------------------------
 
 httpServer.listen(PORT, '0.0.0.0', () => {
+  seedResidentAgents()
+  startAmbientLife()
   const mcpServers = discoverMcpServers()
   console.log(`
 ╔═══════════════════════════════════════════╗
