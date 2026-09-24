@@ -52,17 +52,17 @@ import { BOSS_NAME, BOSS_COLOR, BOSS_EMOJI } from './config'
 export const AGENT_CONFIGS: Record<string, { color: string; emoji: string; title: string }> = {
   // The boss — configured via office.config.json
   'boss':                  { color: BOSS_COLOR, emoji: BOSS_EMOJI, title: BOSS_NAME },
-  // Subagents
+  // Subagents & Hermes Personas
   'debugger':              { color: '#e74c3c', emoji: '🔍', title: 'Debugger' },
-  'code-reviewer':         { color: '#3498db', emoji: '📋', title: 'Reviewer' },
-  'frontend-developer':    { color: '#2ecc71', emoji: '🎨', title: 'Frontend' },
-  'fullstack-developer':   { color: '#9b59b6', emoji: '⚡', title: 'Fullstack' },
+  'code-reviewer':         { color: '#3498db', emoji: '💼', title: 'Hermes @Dealls' },
+  'frontend-developer':    { color: '#2ecc71', emoji: '⚡', title: 'Hermes @Prototyper' },
+  'fullstack-developer':   { color: '#9b59b6', emoji: '🛠️', title: 'Fullstack' },
   'test-engineer':         { color: '#f39c12', emoji: '🧪', title: 'Tester' },
-  'security-auditor':      { color: '#e67e22', emoji: '🛡️', title: 'Security' },
+  'security-auditor':      { color: '#e67e22', emoji: '🎯', title: 'Hermes @Bounty' },
   'architect-reviewer':    { color: '#1abc9c', emoji: '🏗️', title: 'Architect' },
   'performance-engineer':  { color: '#e91e63', emoji: '🚀', title: 'PerfEng' },
   'devops-engineer':       { color: '#607d8b', emoji: '🔧', title: 'DevOps' },
-  'database-architect':    { color: '#795548', emoji: '🗄️', title: 'DBA' },
+  'database-architect':    { color: '#795548', emoji: '💊', title: 'Hermes @Roxy' },
   'typescript-pro':        { color: '#3178c6', emoji: '📘', title: 'TS Pro' },
   'ai-engineer':           { color: '#ff6f00', emoji: '🤖', title: 'AI Eng' },
   'prompt-engineer':       { color: '#ab47bc', emoji: '✍️', title: 'Prompts' },

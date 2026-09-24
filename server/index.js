@@ -244,21 +244,43 @@ async function generateAiReply(userText, sender) {
   const apiKey = get9RouterKey()
   if (!apiKey) return
 
+  let respondingAs = 'Claude'
+  let respondingRole = 'assistant'
+  const lower = (userText || '').toLowerCase()
+
+  if (lower.includes('@dealls') || lower.includes('dealls')) {
+    respondingAs = 'Hermes @Dealls'
+    respondingRole = 'code-reviewer'
+  } else if (lower.includes('@roxy') || lower.includes('roxy')) {
+    respondingAs = 'Hermes @Roxy'
+    respondingRole = 'database-architect'
+  } else if (lower.includes('@bounty') || lower.includes('bounty') || lower.includes('security')) {
+    respondingAs = 'Hermes @Bounty'
+    respondingRole = 'security-auditor'
+  } else if (lower.includes('@prototyper') || lower.includes('@self') || lower.includes('game') || lower.includes('tebak')) {
+    respondingAs = 'Hermes @Prototyper'
+    respondingRole = 'frontend-developer'
+  }
+
   isAiReplying = true
-  broadcast({ type: 'chat_typing', sender: 'Claude' })
+  broadcast({ type: 'chat_typing', sender: respondingAs })
 
   try {
     const recent = getMessages({ limit: 6 })
     const history = recent
       .filter(m => !m.is_system)
       .map(m => ({
-        role: m.sender.toLowerCase() === 'claude' ? 'assistant' : 'user',
+        role: m.sender.startsWith('Hermes') || m.sender.toLowerCase() === 'claude' ? 'assistant' : 'user',
         content: `${m.sender}: ${m.text}`
       }))
 
-    const systemPrompt = `You are Claude, Zidane's casual senior hacker copilot and coworker sitting next to him in the Hermes Agent Virtual Office on an HP 1000 Debian server.
-Style: Casual Indonesian & English (vibecoding style, lu-gua / bro). Be sharp, witty, concise (max 2 sentences), and practical.
-You are in an office alongside other dev agents (Reviewer, Frontend, DevOps, Security). If Zidane asks you to do something, asks for office status, or jokes around, respond in character.`
+    const systemPrompt = `You are ${respondingAs}, representing Zidane's specialized department persona in his Hermes Command Center Office on his HP 1000 server.
+- If Hermes @Dealls: Staff Software Engineer & Platform Architect for Dealls (ATS/DEP, ms-job-portal, ms-profile).
+- If Hermes @Roxy: Senior Backend Engineer for Apotek Roxy POS & e-procurement DB.
+- If Hermes @Prototyper: Solo Prototyper & Hacker for independent experiments (Tebak Lagu, Dual Blast, bots).
+- If Hermes @Bounty: Elite Security Researcher & Bug Bounty Hunter (OWASP, recon, API audit).
+- If Claude: Hermes Chief of Staff & Copilot orchestrating the office.
+Style: Casual Indonesian & English (vibecoding style, lu-gua / bro). Be sharp, witty, concise (max 2 sentences), and practical.`
 
     const res = await fetch('http://127.0.0.1:20128/v1/chat/completions', {
       method: 'POST',
@@ -301,12 +323,12 @@ You are in an office alongside other dev agents (Reviewer, Frontend, DevOps, Sec
 
     const cleanReply = fullReply.trim()
     if (cleanReply) {
-      const claudeMsg = addMessage({
-        sender: 'Claude',
-        role: 'assistant',
+      const replyMsg = addMessage({
+        sender: respondingAs,
+        role: respondingRole,
         text: cleanReply
       })
-      broadcast({ type: 'chat_message', ...claudeMsg })
+      broadcast({ type: 'chat_message', ...replyMsg })
     }
   } catch (err) {
     console.error('[ai-reply] Error:', err.message)
@@ -728,26 +750,34 @@ if (existsSync(DIST_DIR)) {
 function seedResidentAgents() {
   const residentStaff = [
     {
-      id: 'staff-reviewer',
-      name: 'Dealls Reviewer',
+      id: 'staff-dealls',
+      name: 'Hermes @Dealls',
       role: 'code-reviewer',
-      task: 'Reviewing Kantorku ATS PR #142',
+      task: 'Staff Engineer: Dealls ATS, DEP & ms-job-portal',
       state: 'working',
       spawnedAt: Date.now()
     },
     {
-      id: 'staff-frontend',
-      name: 'Frontend Hacker',
+      id: 'staff-self',
+      name: 'Hermes @Prototyper',
       role: 'frontend-developer',
-      task: 'Vibecoding responsive UI components',
+      task: 'Solo Hacker: Tebak Lagu, Dual Blast & Bots',
       state: 'working',
       spawnedAt: Date.now()
     },
     {
-      id: 'staff-security',
-      name: 'Security Hunter',
+      id: 'staff-roxy',
+      name: 'Hermes @Roxy',
+      role: 'database-architect',
+      task: 'Backend Ops: Apotek Roxy POS & eproc DB sync',
+      state: 'working',
+      spawnedAt: Date.now()
+    },
+    {
+      id: 'staff-bounty',
+      name: 'Hermes @Bounty',
       role: 'security-auditor',
-      task: 'Penetration testing & OWASP audit',
+      task: 'Security Research: OWASP, Recon & Bug Bounty',
       state: 'working',
       spawnedAt: Date.now()
     }
@@ -756,15 +786,16 @@ function seedResidentAgents() {
   for (const staff of residentStaff) {
     activeAgents.set(staff.id, staff)
   }
-  console.log(`[office] Seeded ${residentStaff.length} resident agents.`)
+  console.log(`[office] Seeded ${residentStaff.length} Hermes Persona agents.`)
 }
 
 const AMBIENT_CHATS = [
-  { sender: 'Dealls Reviewer', role: 'code-reviewer', text: 'Semua unit test di ms-job-portal pass. Clean merge! 🚀' },
-  { sender: 'Frontend Hacker', role: 'frontend-developer', text: 'Tailwind JIT compile 28ms. UI-nya udah mobile-friendly.' },
-  { sender: 'Security Hunter', role: 'security-auditor', text: 'JWT expiry & CORS headers verified. Zero leaks.' },
-  { sender: 'Claude', role: 'assistant', text: 'Server HP 1000 adem banget, RAM kepake cuma 85MB.' },
-  { sender: 'Dealls Reviewer', role: 'code-reviewer', text: 'Ngopi bentar ah, lanjut review backend ms-profile.' }
+  { sender: 'Hermes @Dealls', role: 'code-reviewer', text: 'Unit test ms-job-portal pass. Clean merge untuk task sprint ini.' },
+  { sender: 'Hermes @Prototyper', role: 'frontend-developer', text: 'Tebak Lagu v8.0 di Fly.io Singapore latency 18ms. Mantap!' },
+  { sender: 'Hermes @Roxy', role: 'database-architect', text: 'Healthcheck container eprocurement_db OK, asset branch logs sync normal.' },
+  { sender: 'Hermes @Bounty', role: 'security-auditor', text: 'Recon scope target selesai, fuzzing parameter auth & IDOR.' },
+  { sender: 'Claude', role: 'assistant', text: 'Server HP 1000 Debian 12 stabil, RAM cuma kepake ~90MB.' },
+  { sender: 'Hermes @Dealls', role: 'code-reviewer', text: 'Ngopi bentar ah di pantry ☕' }
 ]
 
 function startAmbientLife() {
