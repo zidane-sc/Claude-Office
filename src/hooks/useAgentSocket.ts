@@ -61,8 +61,12 @@ type ServerMessage = OfficeEvent | SnapshotMessage
 // Constants
 // ---------------------------------------------------------------------------
 
-const WS_URL         = 'ws://localhost:3334/ws'
-const ROSTER_URL     = 'http://localhost:3334/roster'
+const defaultProto = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+const defaultHttp  = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'https:' : 'http:'
+const defaultHost  = typeof window !== 'undefined' ? window.location.host : 'localhost:3334'
+
+const WS_URL         = `${defaultProto}//${defaultHost}/ws`
+const ROSTER_URL     = `${defaultHttp}//${defaultHost}/roster`
 const MAX_EVENTS     = 50
 const BACKOFF_INITIAL = 500   // ms
 const BACKOFF_MAX    = 30_000 // ms

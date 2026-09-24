@@ -79,7 +79,7 @@ const SlackChat: React.FC<SlackChatProps> = ({ messages, muted, volume, onToggle
 
   // Load initial state from server
   useEffect(() => {
-    fetch('http://127.0.0.1:3334/chat/cron-state')
+    fetch('/chat/cron-state')
       .then(r => r.json())
       .then(d => setCronPaused(!!d.paused))
       .catch(() => {})
@@ -89,7 +89,7 @@ const SlackChat: React.FC<SlackChatProps> = ({ messages, muted, volume, onToggle
     const newState = !cronPaused
     setCronPaused(newState)
     // Update the state file via a simple POST
-    fetch('http://127.0.0.1:3334/chat/cron-state', {
+    fetch('/chat/cron-state', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ paused: newState }),

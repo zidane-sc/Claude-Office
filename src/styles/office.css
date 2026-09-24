@@ -1222,3 +1222,80 @@
   pointer-events: none;
   z-index: 3;
 }
+
+/* ===== MOBILE & RESPONSIVE SUPPORT ===== */
+@media (max-width: 1100px) {
+  .app-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    transform: none;
+    width: 100vw;
+    width: 100dvw;
+    height: 100vh;
+    height: 100dvh;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .title-bar {
+    padding: 0 8px;
+    height: 32px;
+  }
+  .title-bar-text {
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+  .app-body {
+    flex-direction: column !important;
+    overflow-y: auto;
+  }
+  .office-view {
+    height: 48vh;
+    height: 48dvh;
+    min-height: 250px;
+    width: 100%;
+    flex: none;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .office-container, .room-container {
+    max-width: 100%;
+    max-height: 100%;
+  }
+  .slack-panel {
+    width: 100% !important;
+    min-width: 100% !important;
+    flex: 1;
+    min-height: 45vh;
+    min-height: 45dvh;
+    border-left: none;
+    border-top: 1px solid #35363a;
+  }
+  .slack-body {
+    max-height: calc(45dvh - 80px);
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .app-body {
+    flex-direction: row !important;
+  }
+  .office-view {
+    height: 100%;
+    flex: 1;
+  }
+  .slack-panel {
+    width: 260px !important;
+    min-width: 260px !important;
+    height: 100%;
+    border-top: none;
+    border-left: 1px solid #35363a;
+  }
+}
+

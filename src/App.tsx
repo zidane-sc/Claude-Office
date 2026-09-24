@@ -842,7 +842,7 @@ const App: React.FC = () => {
   // WebSocket connection
   // ---------------------------------------------------------------------------
 
-  useAgentSocket({ onEvent: handleEvent, url: 'ws://localhost:3334/ws', disabled: isSimMode })
+  useAgentSocket({ onEvent: handleEvent, disabled: isSimMode })
 
   // ---------------------------------------------------------------------------
   // Simulation loop — spawns/completes fake agents (only in ?sim mode)
@@ -1918,7 +1918,7 @@ const App: React.FC = () => {
           addMsg(bossCfg.title, BOSS_ROLE, bossCfg.color, text)
           setAutoTypeText(undefined)
           // Send to server so Claude can read it
-          fetch('http://127.0.0.1:3334/chat', {
+          fetch('/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sender: bossCfg.title, text }),

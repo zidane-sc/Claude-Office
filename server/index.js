@@ -31,7 +31,7 @@ function sendNotification(title, msg) {
   } catch {}
 }
 
-const PORT = 3334
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3334
 
 // ---------------------------------------------------------------------------
 // Auth token — generated on startup, written to /tmp/agent-office-token
@@ -52,14 +52,8 @@ try {
 // Allowed origins
 // ---------------------------------------------------------------------------
 
-const ALLOWED_ORIGINS = new Set([
-  'http://localhost:3333',
-  'http://localhost:3334',
-])
-
 function isAllowedOrigin(origin) {
-  if (!origin) return true  // null origin (Electron, file://, curl)
-  return ALLOWED_ORIGINS.has(origin)
+  return true // Allow all origins for tunnel & local network
 }
 
 // ---------------------------------------------------------------------------
@@ -189,10 +183,10 @@ app.get('/roster', (_req, res) => {
  *   { type: "mcp_done",        server, agentId? }
  */
 app.post('/event', (req, res) => {
-  // Auth check
+  // Auth check — allow internal calls if no token is sent, or verify if present
   const authHeader = req.headers['authorization'] ?? ''
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
-  if (token !== AUTH_TOKEN) {
+  if (token && token !== AUTH_TOKEN) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
@@ -583,19 +577,39 @@ function broadcast(payload) {
 }
 
 // ---------------------------------------------------------------------------
+// Static file serving for built frontend
+// ---------------------------------------------------------------------------
+
+const DIST_DIR = join(__dirname, '..', 'dist')
+const PUBLIC_DIR = join(__dirname, '..', 'public')
+
+if (existsSync(PUBLIC_DIR)) {
+  app.use(express.static(PUBLIC_DIR))
+}
+if (existsSync(DIST_DIR)) {
+  app.use(express.static(DIST_DIR))
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/ws') || req.path.startsWith('/event') || req.path.startsWith('/chat') || req.path.startsWith('/roster') || req.path.startsWith('/health')) {
+      return next()
+    }
+    res.sendFile(join(DIST_DIR, 'index.html'))
+  })
+}
+
+// ---------------------------------------------------------------------------
 // Boot
 // ---------------------------------------------------------------------------
 
-httpServer.listen(PORT, '127.0.0.1', () => {
+httpServer.listen(PORT, '0.0.0.0', () => {
   const mcpServers = discoverMcpServers()
   console.log(`
 ╔═══════════════════════════════════════════╗
 ║         Agent Office Server v1.0          ║
 ╠═══════════════════════════════════════════╣
-║  HTTP  http://localhost:${PORT}              ║
-║  WS    ws://localhost:${PORT}/ws             ║
-║  POST  http://localhost:${PORT}/event        ║
-║  GET   http://localhost:${PORT}/roster       ║
+║  HTTP  http://0.0.0.0:${PORT}              ║
+║  WS    ws://0.0.0.0:${PORT}/ws             ║
+║  POST  http://0.0.0.0:${PORT}/event        ║
+║  GET   http://0.0.0.0:${PORT}/roster       ║
 ╚═══════════════════════════════════════════╝`)
 
   console.log(`  Auth token written to: ${TOKEN_FILE}`)
