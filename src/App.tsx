@@ -1784,7 +1784,7 @@ const App: React.FC = () => {
       </div>
 
       <div className="app-body">
-      <div className="office-view" onClick={() => setSelectedAgent(null)}>
+      <div className="office-view">
         {/* Live Team Roster Strip */}
         <div className="office-team-strip" onClick={(e) => e.stopPropagation()}>
           <span className="team-strip-title">STAFF ({agents.length}):</span>
@@ -1793,7 +1793,10 @@ const App: React.FC = () => {
               <button
                 key={a.id}
                 className={`team-strip-pill ${selectedAgent?.id === a.id ? 'active' : ''}`}
-                onClick={() => setSelectedAgent(a)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSelectedAgent(a)
+                }}
                 style={{ borderLeftColor: a.color }}
                 title={`${a.name} (${a.role})`}
               >
@@ -1970,32 +1973,78 @@ const App: React.FC = () => {
               </div>
 
               <div className="agent-card-actions">
-                <button
-                  className="agent-action-btn primary"
-                  onClick={() => {
-                    const input = document.querySelector('.slack-input') as HTMLInputElement | null
-                    if (input) {
-                      input.value = `@${selectedAgent.name} `
-                      input.focus()
-                    }
-                    setSelectedAgent(null)
-                  }}
-                >
-                  💬 Chat di Slack
-                </button>
-                <button
-                  className="agent-action-btn secondary"
-                  onClick={() => {
-                    fetch('/chat', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ sender: 'Zidane', text: `/coffee` })
-                    }).catch(() => {})
-                    setSelectedAgent(null)
-                  }}
-                >
-                  ☕ Suruh Ngopi
-                </button>
+                {selectedAgent.role === 'boss' ? (
+                  <>
+                    <button
+                      className="agent-action-btn primary"
+                      onClick={() => {
+                        fetch('/chat', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ sender: 'Zidane', text: '/meeting' })
+                        }).catch(() => {})
+                        setSelectedAgent(null)
+                      }}
+                    >
+                      📢 Panggil Meeting
+                    </button>
+                    <button
+                      className="agent-action-btn secondary"
+                      onClick={() => {
+                        fetch('/chat', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ sender: 'Zidane', text: '/coffee' })
+                        }).catch(() => {})
+                        setSelectedAgent(null)
+                      }}
+                    >
+                      ☕ Traktir Ngopi
+                    </button>
+                    <button
+                      className="agent-action-btn secondary"
+                      onClick={() => {
+                        fetch('/chat', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ sender: 'Zidane', text: '/report' })
+                        }).catch(() => {})
+                        setSelectedAgent(null)
+                      }}
+                    >
+                      📊 Laporan
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      className="agent-action-btn primary"
+                      onClick={() => {
+                        const input = document.querySelector('.slack-input') as HTMLInputElement | null
+                        if (input) {
+                          input.value = `@${selectedAgent.name} `
+                          input.focus()
+                        }
+                        setSelectedAgent(null)
+                      }}
+                    >
+                      💬 Chat di Slack
+                    </button>
+                    <button
+                      className="agent-action-btn secondary"
+                      onClick={() => {
+                        fetch('/chat', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ sender: 'Zidane', text: `/coffee` })
+                        }).catch(() => {})
+                        setSelectedAgent(null)
+                      }}
+                    >
+                      ☕ Suruh Ngopi
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

@@ -254,12 +254,24 @@ async function generateAiReply(userText, sender) {
   } else if (lower.includes('@roxy') || lower.includes('roxy')) {
     respondingAs = 'Hermes @Roxy'
     respondingRole = 'database-architect'
-  } else if (lower.includes('@bounty') || lower.includes('bounty') || lower.includes('security')) {
+  } else if (lower.includes('@bounty') || lower.includes('bounty') || lower.includes('security') || lower.includes('vuln')) {
     respondingAs = 'Hermes @Bounty'
     respondingRole = 'security-auditor'
-  } else if (lower.includes('@prototyper') || lower.includes('@self') || lower.includes('game') || lower.includes('tebak')) {
+  } else if (lower.includes('@prototyper') || lower.includes('@self') || lower.includes('game') || lower.includes('tebak') || lower.includes('dual')) {
     respondingAs = 'Hermes @Prototyper'
     respondingRole = 'frontend-developer'
+  } else if (lower.includes('@finance') || lower.includes('uang') || lower.includes('gaji') || lower.includes('saldo') || lower.includes('budget') || lower.includes('dana') || lower.includes('target')) {
+    respondingAs = 'Hermes @Finance'
+    respondingRole = 'performance-engineer'
+  } else if (lower.includes('@couples') || lower.includes('dela') || lower.includes('kencan') || lower.includes('pacar')) {
+    respondingAs = 'Hermes @Couples'
+    respondingRole = 'Explore'
+  } else if (lower.includes('@farm') || lower.includes('farm') || lower.includes('denailss') || lower.includes('akun')) {
+    respondingAs = 'Hermes @Farm'
+    respondingRole = 'devops-engineer'
+  } else if (lower.includes('@study') || lower.includes('kuliah') || lower.includes('ubsi') || lower.includes('kampus')) {
+    respondingAs = 'Hermes @Study'
+    respondingRole = 'typescript-pro'
   }
 
   isAiReplying = true
@@ -279,6 +291,10 @@ async function generateAiReply(userText, sender) {
 - If Hermes @Roxy: Senior Backend Engineer for Apotek Roxy POS & e-procurement DB.
 - If Hermes @Prototyper: Solo Prototyper & Hacker for independent experiments (Tebak Lagu, Dual Blast, bots).
 - If Hermes @Bounty: Elite Security Researcher & Bug Bounty Hunter (OWASP, recon, API audit).
+- If Hermes @Finance: Financial Controller (BCA payroll, Jago bills, NeoBank vault, SeaBank refill 1.35jt, 22.5jt emergency target).
+- If Hermes @Couples: Couples Concierge for Zidane & Dela (Dela 4 Apr 2002, AdaPundi, sushi, dimsum mentai, no ketan susu/kolak, Block Blast).
+- If Hermes @Farm: Account Farm Ops (13 akun GitHub @denailss.beauty, CF catch-all, 24h aging, proxy pool).
+- If Hermes @Study: Academic Copilot for UBSI S1 Sistem Informasi Semester 7.
 - If Claude: Hermes Chief of Staff & Copilot orchestrating the office.
 Style: Casual Indonesian & English (vibecoding style, lu-gua / bro). Be sharp, witty, concise (max 2 sentences), and practical.`
 
@@ -358,12 +374,30 @@ async function handleSlashCommand(cmd, fullText = '') {
       if (agents.length === 0) return '🏢 Office is quiet — no agents active'
       return agents.map(a => `👤 ${a.name} [${a.role}] (${a.state}: ${a.task || 'working'})`).join('\n')
     }
+    case '/meeting': {
+      for (const [id, agent] of activeAgents.entries()) {
+        agent.state = 'talking-to-manager'
+        broadcast({ type: 'agent_working', agentId: id, status: 'attending all-hands meeting 📋' })
+      }
+      return '📢 ALL-HANDS MEETING: Zidane memanggil seluruh departemen berkumpul di depan Kanban Board!'
+    }
+    case '/report': {
+      return `📊 STATUS ALL 8 PERSONA (HERMES HQ):
+💼 @Dealls: ATS/DEP endpoints healthy
+💊 @Roxy: E-Proc DB sync container OK
+⚡ @Prototyper: Tebak Lagu v8.0 live di Fly.io
+🎯 @Bounty: Fuzzing OWASP active
+💰 @Finance: Refill 1.35jt ready, vault target 22.5jt on track
+❤️ @Couples: Dela dating log updated
+🚜 @Farm: 13 GitHub accounts aging healthy
+🎓 @Study: UBSI Sem 7 coursework logged`
+    }
     case '/coffee': {
       for (const [id, agent] of activeAgents.entries()) {
         agent.state = 'coffee-break'
         broadcast({ type: 'agent_working', agentId: id, status: 'grabs a coffee ☕' })
       }
-      return '☕ Coffee break time! Everyone heading to the coffee machine.'
+      return '☕ Boss Zidane mentraktir kopi! Seluruh tim meluncur ke pantry coffee machine.'
     }
     case '/spawn': {
       const parts = fullText.split(' ')
@@ -777,7 +811,39 @@ function seedResidentAgents() {
       id: 'staff-bounty',
       name: 'Hermes @Bounty',
       role: 'security-auditor',
-      task: 'Security Research: OWASP, Recon & Bug Bounty',
+      task: 'AppSec & Recon: OWASP Top 10, Auth & IDOR',
+      state: 'working',
+      spawnedAt: Date.now()
+    },
+    {
+      id: 'staff-finance',
+      name: 'Hermes @Finance',
+      role: 'performance-engineer',
+      task: 'Controller: Cashflow BCA/Jago/Neo & Target 22.5jt',
+      state: 'working',
+      spawnedAt: Date.now()
+    },
+    {
+      id: 'staff-couples',
+      name: 'Hermes @Couples',
+      role: 'Explore',
+      task: 'Concierge: Dela Dating Logs, Anniv & Block Blast',
+      state: 'working',
+      spawnedAt: Date.now()
+    },
+    {
+      id: 'staff-farm',
+      name: 'Hermes @Farm',
+      role: 'devops-engineer',
+      task: 'Farm Ops: 13 GH Accs @denailss, Proxy & 24h Aging',
+      state: 'working',
+      spawnedAt: Date.now()
+    },
+    {
+      id: 'staff-study',
+      name: 'Hermes @Study',
+      role: 'typescript-pro',
+      task: 'Academic: UBSI S1 Sistem Informasi (Semester 7)',
       state: 'working',
       spawnedAt: Date.now()
     }
@@ -794,6 +860,10 @@ const AMBIENT_CHATS = [
   { sender: 'Hermes @Prototyper', role: 'frontend-developer', text: 'Tebak Lagu v8.0 di Fly.io Singapore latency 18ms. Mantap!' },
   { sender: 'Hermes @Roxy', role: 'database-architect', text: 'Healthcheck container eprocurement_db OK, asset branch logs sync normal.' },
   { sender: 'Hermes @Bounty', role: 'security-auditor', text: 'Recon scope target selesai, fuzzing parameter auth & IDOR.' },
+  { sender: 'Hermes @Finance', role: 'performance-engineer', text: 'Pos dana refill Sabtu 1.35jt siap. Target vault darurat on track 22.5jt.' },
+  { sender: 'Hermes @Couples', role: 'Explore', text: 'Catatan kencan Dela aman. Weekend ini sushi/dimsum mentai, no ketan susu ya!' },
+  { sender: 'Hermes @Farm', role: 'devops-engineer', text: 'Pool 13 akun @denailss.beauty aging 24h lancar tanpa flagged.' },
+  { sender: 'Hermes @Study', role: 'typescript-pro', text: 'Modul kuliah SI semester 7 UBSI sudah tersinkron ke Obsidian vault.' },
   { sender: 'Claude', role: 'assistant', text: 'Server HP 1000 Debian 12 stabil, RAM cuma kepake ~90MB.' },
   { sender: 'Hermes @Dealls', role: 'code-reviewer', text: 'Ngopi bentar ah di pantry ☕' }
 ]
